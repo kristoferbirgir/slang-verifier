@@ -2,7 +2,7 @@ pub mod ivl;
 mod ivl_ext;
 
 use ivl::{IVLCmd, IVLCmdKind};
-use slang::ast::{Cmd, CmdKind, Expr, ExprKind, Type, Name};
+use slang::ast::{Cmd, CmdKind, Expr, ExprKind, Type, Name, Range};
 use slang_ui::prelude::*;
 
 pub struct App;
@@ -176,6 +176,11 @@ fn cmd_to_ivlcmd(cmd: &Cmd) -> IVLCmd {
             encode_loop(&invariants, &body.cases)
         }
 
+        // For-loop statement: encode bounded for-loops by unrolling
+        CmdKind::For { name, range, body, .. } => {
+            encode_bounded_for_loop(name, range, &body.cmd)
+        }
+
         // Debug: print unknown/unsupported command kinds so we can map them as we implement Core A fully.
         _ => {
             eprintln!("DEBUG: unsupported CmdKind = {:?}", cmd.kind);
@@ -319,6 +324,108 @@ fn substitute_result_identifier(expr: &Expr, replacement: &Expr) -> Expr {
         _ => {
             // For other expression kinds, conservatively return original
             // In a full implementation, we'd recursively substitute in all sub-expressions
+            expr.clone()
+        }
+    }
+}
+
+// Encode a bounded for-loop by unrolling it
+// for i in start..end { body } becomes a sequence of body executions with i substituted
+fn encode_bounded_for_loop(loop_var: &Name, range: &Range, body: &Cmd) -> IVLCmd {
+    match range {
+        Range::FromTo(start_expr, end_expr) => {
+            // Extract constant values from start and end expressions
+            if let (Some(start_val), Some(end_val)) = (extract_int_constant(start_expr), extract_int_constant(end_expr)) {
+                // Unroll the loop: for i in start..end means i goes from start to end-1 (inclusive start, exclusive end)
+                let mut commands = Vec::new();
+                
+                for i in start_val..end_val {
+                    // Create a constant expression for the current loop variable value
+                    let i_expr = Expr::num(i);
+                    
+                    // Substitute the loop variable with the constant value in the body
+                    let substituted_body = substitute_loop_var(body, loop_var, &i_expr);
+                    
+                    // Convert the substituted body to IVL
+                    let ivl_body = cmd_to_ivlcmd(&substituted_body);
+                    commands.push(ivl_body);
+                }
+                
+                if commands.is_empty() {
+                    // Empty range - no iterations
+                    IVLCmd::nop()
+                } else {
+                    // Sequence all the unrolled iterations
+                    IVLCmd::seqs(&commands)
+                }
+            } else {
+                // Non-constant range - not supported for bounded for-loops (Extension Feature 1)
+                eprintln!("DEBUG: For-loop with non-constant range not supported in Extension Feature 1");
+                IVLCmd::nop()
+            }
+        }
+    }
+}
+
+// Extract integer constant from an expression, if possible
+fn extract_int_constant(expr: &Expr) -> Option<i64> {
+    match &expr.kind {
+        ExprKind::Num(n) => Some(*n),
+        _ => None,
+    }
+}
+
+// Substitute a loop variable with a specific value in a command
+fn substitute_loop_var(cmd: &Cmd, var: &Name, replacement: &Expr) -> Cmd {
+    let new_kind = match &cmd.kind {
+        CmdKind::Assignment { name, expr } => {
+            let new_expr = substitute_var_in_expr(expr, var, replacement);
+            CmdKind::Assignment { name: name.clone(), expr: new_expr }
+        }
+        CmdKind::Assert { condition, message } => {
+            let new_condition = substitute_var_in_expr(condition, var, replacement);
+            CmdKind::Assert { condition: new_condition, message: message.clone() }
+        }
+        CmdKind::VarDefinition { name, ty, expr } => {
+            let new_expr = expr.as_ref().map(|e| substitute_var_in_expr(e, var, replacement));
+            CmdKind::VarDefinition { name: name.clone(), ty: ty.clone(), expr: new_expr }
+        }
+        CmdKind::Seq(c1, c2) => {
+            let new_c1 = substitute_loop_var(c1, var, replacement);
+            let new_c2 = substitute_loop_var(c2, var, replacement);
+            CmdKind::Seq(Box::new(new_c1), Box::new(new_c2))
+        }
+        // For other command kinds, conservatively return the original
+        // (could expand this as needed)
+        _ => cmd.kind.clone(),
+    };
+    
+    Cmd::new(new_kind)
+}
+
+// Substitute a variable in an expression (similar to substitute_var but creates new expressions)
+fn substitute_var_in_expr(expr: &Expr, var: &Name, replacement: &Expr) -> Expr {
+    match &expr.kind {
+        ExprKind::Ident(name) => {
+            if name == &var.ident {
+                replacement.clone()
+            } else {
+                expr.clone()
+            }
+        }
+        ExprKind::Infix(left, op, right) => {
+            let left_sub = substitute_var_in_expr(left, var, replacement);
+            let right_sub = substitute_var_in_expr(right, var, replacement);
+            let new_kind = ExprKind::Infix(Box::new(left_sub), *op, Box::new(right_sub));
+            Expr::new_typed(new_kind, expr.ty.clone())
+        }
+        ExprKind::Prefix(op, operand) => {
+            let operand_sub = substitute_var_in_expr(operand, var, replacement);
+            let new_kind = ExprKind::Prefix(*op, Box::new(operand_sub));
+            Expr::new_typed(new_kind, expr.ty.clone())
+        }
+        _ => {
+            // For other expression kinds, return original
             expr.clone()
         }
     }

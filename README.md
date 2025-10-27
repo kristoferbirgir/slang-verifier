@@ -669,7 +669,7 @@ We extend the template to support all core and extension features of the assignm
 
 | Extension Feature | Stars | Status | Notes |
 |------------------|------:|--------|------|
-| 1: Bounded for-loops | ⭐ | ⏳ Planned |
+| 1: Bounded for-loops | ⭐ | ✅ Finished | Loop unrolling for constant ranges, variable substitution |
 | 2: Mutually recursive methods | ⭐ | ⏳ Planned |
 | 3: Efficient assignments (DSA) | ⭐ | ⏳ Planned |
 | 4: Unbounded for-loops | ⭐⭐ | ⏳ Planned |
@@ -681,7 +681,7 @@ We extend the template to support all core and extension features of the assignm
 | 10: Early return support | ⭐⭐ | ⏳ Planned |
 | 11: Break/continue in loops | ⭐⭐⭐⭐ | ⏳ Planned |
 
-✅ Stars Completed: **6 / 26**  
+✅ Stars Completed: **7 / 27**  
 🎯 Stars Planned: **27 / 27**
 
 > ✔ This table will be continually updated as we complete each feature with proper tests.
