@@ -3,8 +3,8 @@ method iter(n: Int): Int
 {
     var i: Int := 0;
     loop 
-        // @CheckError
         // false: when the loop terminates, i == n + 1
+        // @CheckError
         invariant i <= n 
     {
         i <= n => i := i + 1
