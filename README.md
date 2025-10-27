@@ -671,7 +671,7 @@ We extend the template to support all core and extension features of the assignm
 |------------------|------:|--------|------|
 | 1: Bounded for-loops | ⭐ | ✅ Finished | Loop unrolling for constant ranges, variable substitution |
 | 2: Mutually recursive methods | ⭐ | ✅ Finished | Multiple methods, method calls, basic recursion support |
-| 3: Efficient assignments (DSA) | ⭐ | ⏳ Planned |
+| 3: Efficient assignments (DSA) | ⭐ | ✅ Finished | DSA principles via WP substitution, eliminates Assignment/Havoc |
 | 4: Unbounded for-loops | ⭐⭐ | ⏳ Planned |
 | 5: Custom type definitions | ⭐⭐ | ⏳ Planned |
 | 6: User-defined functions | ⭐⭐⭐ | ⏳ Planned |
@@ -681,7 +681,7 @@ We extend the template to support all core and extension features of the assignm
 | 10: Early return support | ⭐⭐ | ⏳ Planned |
 | 11: Break/continue in loops | ⭐⭐⭐⭐ | ⏳ Planned |
 
-✅ Stars Completed: **8 / 27**  
+✅ Stars Completed: **9 / 27**  
 🎯 Stars Planned: **27 / 27**
 
 > ✔ This table will be continually updated as we complete each feature with proper tests.
