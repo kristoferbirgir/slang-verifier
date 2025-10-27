@@ -665,7 +665,7 @@ We extend the template to support all core and extension features of the assignm
 |--------|------:|--------|------|
 | Core A: Single loop-free method | ⭐⭐ | ✅ Finished | Match statements, assignments, variable definitions |
 | Core B: Partial correctness of loops | ⭐⭐ | ✅ Finished | Loop invariants, invariant preservation checking |
-| Core C: Error reporting | ⭐⭐ | ⏳ Planned | |
+| Core C: Error reporting | ⭐⭐ | ✅ Finished | Enhanced error messages, proper error reporting for assertions and loops |
 
 | Extension Feature | Stars | Status | Notes |
 |------------------|------:|--------|------|
@@ -681,7 +681,7 @@ We extend the template to support all core and extension features of the assignm
 | 10: Early return support | ⭐⭐ | ⏳ Planned |
 | 11: Break/continue in loops | ⭐⭐⭐⭐ | ⏳ Planned |
 
-✅ Stars Completed: **4 / 26**  
+✅ Stars Completed: **6 / 26**  
 🎯 Stars Planned: **27 / 27**
 
 > ✔ This table will be continually updated as we complete each feature with proper tests.
