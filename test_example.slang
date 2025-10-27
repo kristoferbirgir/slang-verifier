@@ -8,4 +8,3 @@ method m(x: Int) {
     };
     assert y > 0
 }
-
