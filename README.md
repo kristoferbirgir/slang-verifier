@@ -1,4 +1,4 @@
-# Slang Verifier — HBV Project 1
+# Slang Verifier — Project 1
 
 ## Overview
 This project implements an automated verification tool for the *slang* language, based on the official template provided by the course staff:
