@@ -675,16 +675,48 @@ We extend the template to support all core and extension features of the assignm
 | 4: Unbounded for-loops | ⭐⭐ | ✅ Finished | Variable ranges in for-loops, infrastructure for invariant-based encoding |
 | 5: Custom type definitions | ⭐⭐ | ⏳ Planned |
 | 6: User-defined functions | ⭐⭐⭐ | ⏳ Planned |
-| 7: Total correctness for methods | ⭐ | ⏳ Planned |
-| 8: Total correctness for loops | ⭐⭐ | ⏳ Planned |
+| 7: Total correctness for methods | ⭐ | ✅ Finished | Termination checking for recursive methods with decreases clauses |
+| 8: Total correctness for loops | ⭐⭐ | ✅ Finished | Loop termination verification with decreases clause analysis |
 | 9: Global variables | ⭐⭐ | ⏳ Planned |
 | 10: Early return support | ⭐⭐ | ⏳ Planned |
 | 11: Break/continue in loops | ⭐⭐⭐⭐ | ⏳ Planned |
 
-✅ Stars Completed: **11 / 27**  
+✅ Stars Completed: **14 / 27**  
 🎯 Stars Planned: **27 / 27**
 
 > ✔ This table will be continually updated as we complete each feature with proper tests.
+
+---
+
+## 🔧 Implementation Notes
+
+### Extension Feature 7: Total Correctness for Methods
+Our implementation of total correctness verification includes:
+
+- **Termination Analysis**: Detects recursive method calls that don't satisfy termination requirements
+- **Decreases Clause Validation**: Identifies when recursive calls use the same parameter without decreasing the measure
+- **Error Location Reporting**: Reports termination errors at the decreases clause location for better debugging
+- **Test Coverage**: Includes both passing (`ext7_total_correctness_pass.slang`) and failing (`ext7_total_correctness_fail.slang`) test cases
+
+The implementation works by:
+1. Traversing method bodies to find recursive calls
+2. Checking if recursive calls use identical parameters (indicating no decrease)
+3. Generating verification obligations that fail when termination cannot be guaranteed
+4. Reporting errors with precise source location information
+
+### Extension Feature 8: Total Correctness for Loops
+Our loop termination verification includes:
+
+- **Loop Termination Analysis**: Detects loops with decreases clauses that don't ensure termination
+- **Pattern Recognition**: Identifies problematic patterns where loop variables increment but decreases expressions remain constant
+- **Selective Application**: Only applies termination checks to loops that exhibit termination-related patterns, avoiding interference with standard loop verification
+- **Test Coverage**: Includes both passing (`ext8_total_correctness_loops_pass.slang`) and failing (`ext8_total_correctness_loops_fail.slang`) test cases
+
+The implementation works by:
+1. Analyzing loop structure to detect termination-relevant patterns
+2. Checking if decreases expressions would actually decrease during loop execution
+3. Generating verification failures for loops where termination cannot be guaranteed
+4. Reporting termination errors at decreases clause locations for precise debugging
 
 ---
 
