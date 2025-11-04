@@ -72,6 +72,21 @@ impl IVLCmd {
     pub fn unreachable() -> IVLCmd {
         IVLCmd::assume(&Expr::bool(false))
     }
+    
+    // Extension Feature 11: Loop control flow commands
+    pub fn break_loop() -> IVLCmd {
+        IVLCmd {
+            span: Span::default(),
+            kind: IVLCmdKind::Break,
+        }
+    }
+    
+    pub fn continue_loop() -> IVLCmd {
+        IVLCmd {
+            span: Span::default(),
+            kind: IVLCmdKind::Continue,
+        }
+    }
 }
 
 impl std::fmt::Display for IVLCmd {
@@ -83,6 +98,8 @@ impl std::fmt::Display for IVLCmd {
             IVLCmdKind::Assert { condition, .. } => write!(f, "assert {condition}"),
             IVLCmdKind::Seq(c1, c2) => write!(f, "{c1} ; {c2}"),
             IVLCmdKind::NonDet(c1, c2) => write!(f, "{{ {c1} }} [] {{ {c2} }}"),
+            IVLCmdKind::Break => write!(f, "break"),
+            IVLCmdKind::Continue => write!(f, "continue"),
         }
     }
 }

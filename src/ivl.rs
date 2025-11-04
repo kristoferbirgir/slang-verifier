@@ -20,4 +20,8 @@ pub enum IVLCmdKind {
 
     Seq(Box<IVLCmd>, Box<IVLCmd>),
     NonDet(Box<IVLCmd>, Box<IVLCmd>),
+    
+    // Extension Feature 11: Loop control flow
+    Break,
+    Continue,
 }
