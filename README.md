@@ -7,8 +7,6 @@ Automated verification tool for the *slang* programming language using weakest p
 This implementation is based on the official template provided by course staff:  
 https://github.com/oembo-sse/slang-template
 
-**Note:** Pipeline fails because we have 1 failing test in our project. 
-
 ---
 
 ## Quick Start
