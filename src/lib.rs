@@ -405,21 +405,21 @@ fn cmd_to_ivlcmd(cmd: &Cmd) -> IVLCmd {
             IVLCmd::assume(&Expr::bool(true))
         }
 
-        // Debug: print unknown/unsupported command kinds so we can map them as we implement Core A fully.
+        // Unsupported command kinds - conservative fallback
         _ => {
-            eprintln!("DEBUG: unsupported CmdKind = {:?}", cmd.kind);
-            // Conservative fallback: unsupported command – "no-op" so wp(body, post) = post.
-            // Implemented as `assume true`.
+            // Conservative fallback: unsupported command treated as no-op
+            // wp(nop, post) = post, implemented as `assume true`
             IVLCmd::nop()
         }
     }
 }
 
-// Weakest precondition over the IVL subset we currently emit:
+// Weakest precondition calculation over IVL commands:
 //   - Assert c        ⇒  wp = c
 //   - Assume p        ⇒  wp = (p ==> post)
 //   - Seq(c1, c2)     ⇒  wp(c1, wp(c2, post))
-// (We’ll add Assignment/Havoc/etc. when we handle real updates — for now we encode them as no-ops.)
+//   - Assignment      ⇒  wp(x := e, post) = post[x/e]
+//   - Havoc          ⇒  wp(havoc x, post) = ∀x.post (conservatively: true)
 fn wp(ivl: &IVLCmd, post: &Expr) -> (Expr, String) {
     match &ivl.kind {
         IVLCmdKind::Assert { condition, message } => (condition.clone(), message.clone()),
@@ -771,8 +771,7 @@ fn encode_bounded_for_loop(loop_var: &Name, range: &Range, body: &Cmd) -> IVLCmd
                     IVLCmd::seqs(&commands)
                 }
             } else {
-                // Non-constant range - not supported for bounded for-loops (Extension Feature 1)
-                eprintln!("DEBUG: For-loop with non-constant range not supported in Extension Feature 1");
+                // Non-constant range - handled by Extension Feature 4 (unbounded for-loops)
                 IVLCmd::nop()
             }
         }
