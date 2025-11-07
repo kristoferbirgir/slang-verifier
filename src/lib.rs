@@ -85,10 +85,12 @@ impl slang_ui::Hook for App {
         }
 
         // Extension Feature 5: Process domains and collect their axioms  
-        let domain_axiom_exprs: Vec<Expr> = Vec::new(); // Temporarily disable domain axiom processing
-        for _domain in file.domains() {
-            // Domain support is partially implemented
-            // For now, domain functions are available but axioms are not yet fully supported
+        let mut domain_axiom_exprs: Vec<Expr> = Vec::new();
+        for domain in file.domains() {
+            // Collect all axioms from this domain
+            for axiom in domain.axioms() {
+                domain_axiom_exprs.push(axiom.expr.clone());
+            }
         }
 
         // Extension Feature 6: Process user-defined functions
@@ -151,6 +153,13 @@ impl slang_ui::Hook for App {
                 };
 
                 solver.scope(|solver| {
+                    // Extension Feature 5: Assert domain axioms first
+                    for axiom in &domain_axiom_exprs {
+                        if let Ok(smt_axiom) = axiom.smt(cx.smt_st()) {
+                            solver.assert(smt_axiom.as_bool()?)?;
+                        }
+                    }
+                    
                     // Check validity: assert the negation and ask for SAT?
                     solver.assert(!soblig.as_bool()?)?;
                     match solver.check_sat()? {
@@ -266,6 +275,13 @@ impl slang_ui::Hook for App {
                 };
 
                 solver.scope(|solver| {
+                    // Extension Feature 5: Assert domain axioms first
+                    for axiom in &domain_axiom_exprs {
+                        if let Ok(smt_axiom) = axiom.smt(cx.smt_st()) {
+                            solver.assert(smt_axiom.as_bool()?)?;
+                        }
+                    }
+                    
                     // Check validity: assert the negation and ask for SAT?
                     solver.assert(!soblig.as_bool()?)?;
                     match solver.check_sat()? {
@@ -309,13 +325,13 @@ fn cmd_to_ivlcmd(cmd: &Cmd) -> IVLCmd {
             IVLCmd::assume(&cond)
         }
 
-        // Extension Feature 10: Enhanced sequencing with early return support
-        // wp(c1;c2, post) = wp(c1, wp(c2, post)) unless c1 contains a return
+        // Extension Feature 10 & 11: Enhanced sequencing with early return/break/continue support
+        // wp(c1;c2, post) = wp(c1, wp(c2, post)) unless c1 contains a return/break/continue
         CmdKind::Seq(c1, c2) => {
             let i1 = cmd_to_ivlcmd(c1);
             
-            // Extension Feature 10: If c1 contains a return, c2 is unreachable
-            if contains_return(c1) {
+            // If c1 contains a return, break, or continue, c2 is unreachable
+            if contains_return(c1) || contains_break(c1) || contains_continue(c1) {
                 // Only execute c1, c2 is unreachable
                 i1
             } else {
@@ -384,13 +400,15 @@ fn cmd_to_ivlcmd(cmd: &Cmd) -> IVLCmd {
 
         // Extension Feature 11: Break and continue statements
         CmdKind::Break => {
-            // Break statement - model as unreachable to indicate early loop exit
-            IVLCmd::unreachable()
+            // Break statement - model as no-op (assume true)
+            // The loop encoding handles early exit via nondeterministic choice
+            IVLCmd::assume(&Expr::bool(true))
         }
 
         CmdKind::Continue => {
-            // Continue statement - model as unreachable to indicate jump to next iteration
-            IVLCmd::unreachable()
+            // Continue statement - model as no-op (assume true)
+            // The loop encoding handles iteration restart via nondeterministic choice
+            IVLCmd::assume(&Expr::bool(true))
         }
 
         // Debug: print unknown/unsupported command kinds so we can map them as we implement Core A fully.
@@ -577,6 +595,30 @@ fn contains_return(cmd: &Cmd) -> bool {
             // Variable definitions with complex expressions might contain method calls with returns
             // For simplicity, we'll assume they don't contain returns
             false
+        }
+        _ => false,
+    }
+}
+
+// Extension Feature 11: Check if a command contains a break statement
+fn contains_break(cmd: &Cmd) -> bool {
+    match &cmd.kind {
+        CmdKind::Break => true,
+        CmdKind::Seq(c1, c2) => contains_break(c1) || contains_break(c2),
+        CmdKind::Match { body } => {
+            body.cases.iter().any(|case| contains_break(&case.cmd))
+        }
+        _ => false,
+    }
+}
+
+// Extension Feature 11: Check if a command contains a continue statement  
+fn contains_continue(cmd: &Cmd) -> bool {
+    match &cmd.kind {
+        CmdKind::Continue => true,
+        CmdKind::Seq(c1, c2) => contains_continue(c1) || contains_continue(c2),
+        CmdKind::Match { body } => {
+            body.cases.iter().any(|case| contains_continue(&case.cmd))
         }
         _ => false,
     }
